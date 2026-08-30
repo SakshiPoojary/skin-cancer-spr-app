@@ -324,11 +324,11 @@ with col2:
     )
 
     st.caption(
-        "Validated SPR range: RI = 1.33–1.40"
+        "Validated SPR range: RI = 1.33–1.42"
     )
 
     st.caption(
-        "Healthy reference: RI = 1.35"
+        "Healthy reference: RI = 1.33-1.35"
     )
 
 
@@ -417,29 +417,30 @@ if analyze:
             # preprocessing layers.
             # ------------------------------------------------
 
-            prediction = cnn_model.predict(
-                img_input,
-                verbose=0
-            )
+           prediction = cnn_model.predict(
+    img_input,
+    verbose=0
+)
 
-            malignant_probability = float(
-                np.asarray(prediction)
-                .reshape(-1)[0]
-            )
+raw_prediction = float(
+    np.asarray(prediction).reshape(-1)[0]
+)
 
-            malignant_probability = float(
-                np.clip(
-                    malignant_probability,
-                    0.0,
-                    1.0
-                )
-            )
+st.write("DEBUG — Raw CNN output:", raw_prediction)
 
-            benign_probability = (
-                1.0 -
-                malignant_probability
-            )
+prediction = cnn_model.predict(
+    img_input,
+    verbose=0
+)
 
+raw_prediction = float(
+    np.asarray(prediction).reshape(-1)[0]
+)
+
+st.write("DEBUG — Raw CNN output:", raw_prediction)
+
+malignant_probability = raw_prediction
+benign_probability = 1.0 - raw_prediction
         except Exception as e:
 
             st.error(
