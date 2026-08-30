@@ -420,7 +420,7 @@ if analyze:
            prediction = cnn_model.predict(
             img_input,
             verbose=0
-        )
+           )
 
 raw_prediction = float(
     np.asarray(prediction).reshape(-1)[0]
