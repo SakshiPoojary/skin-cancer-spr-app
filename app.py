@@ -655,3 +655,28 @@ st.caption(
     "decisions. Results must be interpreted by qualified "
     "healthcare professionals."
 )
+st.markdown("---")
+st.subheader("🧪 Multimodal Fusion Test")
+
+test_ri = st.selectbox(
+    "Test RI",
+    [1.33, 1.35, 1.38, 1.40]
+)
+
+test_cnn = st.number_input(
+    "Test CNN malignant probability",
+    min_value=0.0,
+    max_value=1.0,
+    value=0.80,
+    step=0.01
+)
+
+test_score, test_ri_score = calculate_multimodal_score(
+    test_cnn,
+    test_ri,
+    1.35
+)
+
+st.write("CNN probability:", f"{test_cnn * 100:.2f}%")
+st.write("RI optical score:", f"{test_ri_score * 100:.2f}%")
+st.write("Multimodal score:", f"{test_score * 100:.2f}%")
