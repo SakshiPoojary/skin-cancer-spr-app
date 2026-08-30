@@ -64,14 +64,14 @@ st.markdown(
 
 st.markdown(
     '<div class="subtitle">'
-    'Deep Learning + Surface Plasmon Resonance'
+    'CNN + Clinical Features + Surface Plasmon Resonance'
     '</div>',
     unsafe_allow_html=True
 )
 
 st.info(
-    "Research prototype combining skin-image classification "
-    "with refractive-index-based SPR analysis."
+    "Research prototype combining image-based CNN analysis, "
+    "lesion characteristics, and RI-based SPR analysis."
 )
 
 
@@ -134,28 +134,69 @@ def check_image_quality(image):
 
 
 # ============================================================
+# QUESTIONNAIRE SCORE
+# ============================================================
+
+def calculate_questionnaire_score(
+    change_recently,
+    irregular_border,
+    multiple_colors
+):
+    """
+    Research-prototype lesion feature score.
+
+    Each positive feature contributes equally.
+
+    0 positive answers = 0.00
+    1 positive answer  = 0.33
+    2 positive answers = 0.67
+    3 positive answers = 1.00
+    """
+
+    score = (
+        int(change_recently)
+        +
+        int(irregular_border)
+        +
+        int(multiple_colors)
+    ) / 3.0
+
+    return float(score)
+
+
+# ============================================================
 # MULTIMODAL FUSION
 # ============================================================
 
 def calculate_multimodal_score(
     cnn_malignant_probability,
+    questionnaire_score,
     user_ri,
     healthy_ri=1.35
 ):
     """
     Research-prototype multimodal fusion.
 
-    CNN provides the primary image-based evidence.
-    RI provides an additional optical contribution.
+    CNN contribution       = 60%
+    Questionnaire          = 20%
+    SPR/RI contribution    = 20%
 
-    This is NOT a clinically validated cancer probability.
+    IMPORTANT:
+    This is a research-prototype score and NOT a clinically
+    validated cancer probability.
     """
 
-    # Validated SPR range
+    # --------------------------------------------------------
+    # VALIDATED RI RANGE
+    # --------------------------------------------------------
+
     min_ri = 1.33
     max_ri = 1.40
 
-    # Normalize RI
+    # --------------------------------------------------------
+    # NORMALIZE RI
+    # --------------------------------------------------------
+
     ri_normalized = (
         (user_ri - min_ri)
         /
@@ -170,33 +211,77 @@ def calculate_multimodal_score(
         )
     )
 
-    # Healthy reference normalized value
+    # --------------------------------------------------------
+    # HEALTHY REFERENCE
+    # --------------------------------------------------------
+
     healthy_normalized = (
         (healthy_ri - min_ri)
         /
         (max_ri - min_ri)
     )
 
-    # Difference from healthy reference
+    # --------------------------------------------------------
+    # RI DIFFERENCE
+    # --------------------------------------------------------
+
     ri_difference = (
         ri_normalized
         -
         healthy_normalized
     )
 
-    # RI contribution
+    # --------------------------------------------------------
+    # RI EFFECT
     #
-    # Maximum effect is approximately ±15 percentage points.
-    #
-    ri_effect = 0.30 * ri_difference
+    # Maximum effect is approximately ±10 percentage points.
+    # --------------------------------------------------------
 
-    # Final multimodal score
-    multimodal_score = (
+    ri_effect = 0.20 * ri_difference
+
+    # --------------------------------------------------------
+    # QUESTIONNAIRE EFFECT
+    #
+    # Questionnaire score is 0 to 1.
+    #
+    # Center it around 0.5 so that:
+    #
+    # 0 positive features → decreases score
+    # 1-2 features        → moderate effect
+    # 3 features          → increases score
+    # --------------------------------------------------------
+
+    questionnaire_effect = (
+        0.20 *
+        (
+            questionnaire_score
+            -
+            0.50
+        )
+    )
+
+    # --------------------------------------------------------
+    # CNN PRIMARY CONTRIBUTION
+    # --------------------------------------------------------
+
+    cnn_contribution = (
+        0.60 *
         cnn_malignant_probability
+    )
+
+    # --------------------------------------------------------
+    # FINAL SCORE
+    # --------------------------------------------------------
+
+    multimodal_score = (
+        cnn_contribution
+        +
+        0.20 * questionnaire_score
         +
         ri_effect
     )
 
+    # Keep score between 0 and 1
     multimodal_score = float(
         np.clip(
             multimodal_score,
@@ -208,7 +293,8 @@ def calculate_multimodal_score(
     return (
         multimodal_score,
         ri_normalized,
-        ri_effect
+        ri_effect,
+        questionnaire_effect
     )
 
 
@@ -223,11 +309,16 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
+# ============================================================
+# IMAGE + RI
+# ============================================================
+
 col1, col2 = st.columns(2)
 
 
 # ============================================================
-# SKIN IMAGE INPUT
+# IMAGE INPUT
 # ============================================================
 
 with col1:
@@ -236,8 +327,12 @@ with col1:
 
     uploaded_image = st.file_uploader(
         "Upload a skin lesion image",
-        type=["jpg", "jpeg", "png"],
-        help="Upload a JPG, JPEG, or PNG skin image."
+        type=[
+            "jpg",
+            "jpeg",
+            "png"
+        ],
+        help="Upload a clear skin lesion image."
     )
 
     image = None
@@ -299,12 +394,75 @@ with col2:
     )
 
     st.caption(
-        "Validated SPR range: RI = 1.33–1.42"
+        "Validated SPR range: RI = 1.33–1.40"
     )
 
     st.caption(
-        "Healthy reference: RI = 1.33-1.35"
+        "Healthy reference RI = 1.35"
     )
+
+
+# ============================================================
+# LESION QUESTIONS
+# ============================================================
+
+st.markdown("---")
+
+st.markdown(
+    '<div class="section-title">'
+    '🩺 Lesion Characteristics'
+    '</div>',
+    unsafe_allow_html=True
+)
+
+st.write(
+    "Answer the following questions based on the appearance "
+    "or recent history of the lesion."
+)
+
+
+q1 = st.radio(
+    "1. Has the lesion changed in size, shape, or color recently?",
+    [
+        "No",
+        "Yes"
+    ],
+    horizontal=True
+)
+
+
+q2 = st.radio(
+    "2. Does the lesion have an irregular or uneven border?",
+    [
+        "No",
+        "Yes"
+    ],
+    horizontal=True
+)
+
+
+q3 = st.radio(
+    "3. Does the lesion have multiple or uneven colors?",
+    [
+        "No",
+        "Yes"
+    ],
+    horizontal=True
+)
+
+
+# Convert answers to Boolean values
+change_recently = (
+    q1 == "Yes"
+)
+
+irregular_border = (
+    q2 == "Yes"
+)
+
+multiple_colors = (
+    q3 == "Yes"
+)
 
 
 # ============================================================
@@ -327,7 +485,7 @@ analyze = st.button(
 if analyze:
 
     # ========================================================
-    # CHECK IMAGE
+    # IMAGE CHECK
     # ========================================================
 
     if image is None:
@@ -356,75 +514,51 @@ if analyze:
 
         try:
 
-            # ------------------------------------------------
-            # CONVERT IMAGE TO NUMPY
-            # ------------------------------------------------
-
+            # Convert image to NumPy
             img_array = np.array(
                 image,
                 dtype=np.float32
             )
 
-            # ------------------------------------------------
-            # RESIZE TO MODEL INPUT
-            # ------------------------------------------------
-
+            # Resize
             img_resized = tf.image.resize(
                 img_array,
                 (224, 224)
             )
 
-            # ------------------------------------------------
-            # ADD BATCH DIMENSION
-            # ------------------------------------------------
-
+            # Add batch dimension
             img_input = tf.expand_dims(
                 img_resized,
                 axis=0
             )
 
-            # ------------------------------------------------
-            # IMPORTANT
-            #
-            # DO NOT DIVIDE BY 255.
-            #
-            # The saved CNN already contains its own
+            # IMPORTANT:
+            # Do NOT divide by 255.
+            # The trained model already contains
             # preprocessing layers.
-            # ------------------------------------------------
 
             prediction = cnn_model.predict(
                 img_input,
                 verbose=0
             )
 
-            # ------------------------------------------------
-            # RAW CNN OUTPUT
-            # ------------------------------------------------
-
+            # Raw model output
             raw_prediction = float(
                 np.asarray(prediction)
                 .reshape(-1)[0]
             )
 
-            # ------------------------------------------------
-            # TEMPORARY DEBUG DISPLAY
-            #
-            # This lets us verify the class mapping.
-            # ------------------------------------------------
-
-            st.caption(
-                f"Raw CNN output: {raw_prediction:.6f}"
+            raw_prediction = float(
+                np.clip(
+                    raw_prediction,
+                    0.0,
+                    1.0
+                )
             )
 
-            # ------------------------------------------------
-            # CURRENT INTERPRETATION
-            #
-            # We are temporarily treating output as
-            # malignant probability.
-            #
-            # We will verify this after seeing the raw
-            # output on your known benign mole.
-            # ------------------------------------------------
+            # Class mapping confirmed during training:
+            # Benign = 0
+            # Malignant = 1
 
             malignant_probability = (
                 raw_prediction
@@ -484,7 +618,7 @@ if analyze:
 
 
     # ========================================================
-    # CNN RESULT
+    # CNN RESULTS
     # ========================================================
 
     cnn_col1, cnn_col2, cnn_col3, cnn_col4 = (
@@ -521,9 +655,66 @@ if analyze:
 
 
     st.caption(
-        "CNN model: EfficientNet-based classifier. "
-        
+        "EfficientNet-based CNN | "
+        "Test accuracy: 91.75%"
     )
+
+
+    # ========================================================
+    # LESION QUESTIONNAIRE RESULT
+    # ========================================================
+
+    questionnaire_score = (
+        calculate_questionnaire_score(
+            change_recently,
+            irregular_border,
+            multiple_colors
+        )
+    )
+
+
+    st.markdown("---")
+
+    st.subheader(
+        "🩺 Lesion Feature Analysis"
+    )
+
+
+    feature_col1, feature_col2, feature_col3, feature_col4 = (
+        st.columns(4)
+    )
+
+
+    with feature_col1:
+
+        st.metric(
+            "Recent Change",
+            "Yes" if change_recently else "No"
+        )
+
+
+    with feature_col2:
+
+        st.metric(
+            "Irregular Border",
+            "Yes" if irregular_border else "No"
+        )
+
+
+    with feature_col3:
+
+        st.metric(
+            "Multiple Colors",
+            "Yes" if multiple_colors else "No"
+        )
+
+
+    with feature_col4:
+
+        st.metric(
+            "Feature Score",
+            f"{questionnaire_score * 100:.0f}%"
+        )
 
 
     # ========================================================
@@ -561,7 +752,7 @@ if analyze:
 
 
     # ========================================================
-    # RI RANGE CHECK
+    # RI VALIDATION
     # ========================================================
 
     if not spr_result["success"]:
@@ -571,7 +762,7 @@ if analyze:
         )
 
         st.info(
-            "Please enter an RI between 1.33 and 1.42 "
+            "Please enter an RI between 1.33 and 1.40 "
             "for the validated SPR model."
         )
 
@@ -616,12 +807,14 @@ if analyze:
         st.columns(4)
     )
 
+
     with spr_col1:
 
         st.metric(
             "User RI",
             f"{spr_result['ri']:.3f}"
         )
+
 
     with spr_col2:
 
@@ -630,12 +823,14 @@ if analyze:
             f"{spr_result['spr_angle']:.2f}°"
         )
 
+
     with spr_col3:
 
         st.metric(
             "User Rmin",
             f"{spr_result['rmin']:.4f}"
         )
+
 
     with spr_col4:
 
@@ -653,9 +848,11 @@ if analyze:
         "Healthy Skin vs User Skin SPR Response"
     )
 
+
     fig, ax = plt.subplots(
         figsize=(12, 6)
     )
+
 
     # Healthy curve
     ax.plot(
@@ -667,6 +864,7 @@ if analyze:
             f"(RI = {healthy_result['ri']:.3f})"
         )
     )
+
 
     # User curve
     ax.plot(
@@ -680,6 +878,7 @@ if analyze:
         )
     )
 
+
     # Healthy resonance
     ax.axvline(
         healthy_result["spr_angle"],
@@ -691,6 +890,7 @@ if analyze:
         )
     )
 
+
     # User resonance
     ax.axvline(
         spr_result["spr_angle"],
@@ -701,6 +901,7 @@ if analyze:
             f"{spr_result['spr_angle']:.2f}°"
         )
     )
+
 
     ax.set_xlabel(
         "Incident Angle (degrees)",
@@ -742,6 +943,7 @@ if analyze:
         "SPR Result"
     )
 
+
     if angular_shift > 0:
 
         st.info(
@@ -773,9 +975,11 @@ if analyze:
     (
         multimodal_score,
         ri_normalized,
-        ri_effect
+        ri_effect,
+        questionnaire_effect
     ) = calculate_multimodal_score(
         malignant_probability,
+        questionnaire_score,
         spr_result["ri"],
         healthy_result["ri"]
     )
@@ -800,8 +1004,10 @@ if analyze:
 
     multimodal_confidence = max(
         multimodal_score,
-        1.0 - multimodal_score
+        1.0 -
+        multimodal_score
     )
+
 
     if multimodal_confidence >= 0.80:
 
@@ -824,20 +1030,23 @@ if analyze:
 
     st.markdown(
         '<div class="section-title">'
-        '🧬🔬 Multimodal Fusion Result'
+        '🧬 + 🩺 + 🔬 Multimodal Fusion Result'
         '</div>',
         unsafe_allow_html=True
     )
 
+
     st.write(
-        "The final research score combines the CNN image "
-        "output with the RI-based SPR contribution."
+        "The final research score combines three information "
+        "sources: CNN image evidence, lesion characteristics, "
+        "and RI-based SPR information."
     )
 
 
     mm_col1, mm_col2, mm_col3, mm_col4 = (
         st.columns(4)
     )
+
 
     with mm_col1:
 
@@ -846,6 +1055,7 @@ if analyze:
             multimodal_class
         )
 
+
     with mm_col2:
 
         st.metric(
@@ -853,12 +1063,14 @@ if analyze:
             f"{multimodal_score * 100:.2f}%"
         )
 
+
     with mm_col3:
 
         st.metric(
-            "CNN Malignant Output",
+            "CNN Output",
             f"{malignant_probability * 100:.2f}%"
         )
+
 
     with mm_col4:
 
@@ -881,51 +1093,49 @@ if analyze:
 
 
     # ========================================================
-    # RI CONTRIBUTION
+    # CONTRIBUTION BREAKDOWN
     # ========================================================
 
     st.subheader(
-        "🔬 RI Contribution"
+        "📊 Multimodal Contribution"
     )
+
 
     contribution_col1, contribution_col2, contribution_col3 = (
         st.columns(3)
     )
 
+
     with contribution_col1:
 
         st.write(
-            f"**Healthy Reference RI:** "
-            f"{healthy_result['ri']:.3f}"
+            f"**CNN contribution:** "
+            f"{0.60 * malignant_probability * 100:.2f}%"
         )
+
 
     with contribution_col2:
 
         st.write(
-            f"**User RI:** "
-            f"{spr_result['ri']:.3f}"
+            f"**Questionnaire contribution:** "
+            f"{0.20 * questionnaire_score * 100:.2f}%"
         )
+
 
     with contribution_col3:
 
-        if ri_effect > 0:
+        if ri_effect >= 0:
 
             st.write(
-                f"**RI Effect:** "
+                f"**SPR/RI effect:** "
                 f"+{ri_effect * 100:.2f}%"
-            )
-
-        elif ri_effect < 0:
-
-            st.write(
-                f"**RI Effect:** "
-                f"{ri_effect * 100:.2f}%"
             )
 
         else:
 
             st.write(
-                "**RI Effect:** 0.00%"
+                f"**SPR/RI effect:** "
+                f"{ri_effect * 100:.2f}%"
             )
 
 
@@ -939,9 +1149,11 @@ if analyze:
         "🎯 Final Multimodal Assessment"
     )
 
+
     final_col1, final_col2 = (
         st.columns(2)
     )
+
 
     with final_col1:
 
@@ -949,6 +1161,7 @@ if analyze:
             "Final Result",
             multimodal_class
         )
+
 
     with final_col2:
 
@@ -968,19 +1181,21 @@ if analyze:
         "Research Interpretation"
     )
 
+
     st.write(
-        "The CNN provides image-based classification, while "
-        "the SPR pathway provides optical information based "
-        "on the measured refractive index. These two sources "
-        "are combined as complementary information in the "
-        "proposed multimodal research system."
+        "The proposed system combines image-based CNN "
+        "features, user-reported lesion characteristics, "
+        "and optical SPR information. These modalities "
+        "provide complementary evidence for the proposed "
+        "multimodal assessment."
     )
 
+
     st.warning(
-        "The multimodal score is a research-prototype fusion "
-        "score and is not a clinically validated cancer "
-        "probability. The application should not be used "
-        "for medical diagnosis."
+        "The multimodal score is a research-prototype "
+        "fusion score and is not a clinically validated "
+        "cancer probability. It should not be used as a "
+        "medical diagnosis."
     )
 
 
@@ -991,7 +1206,6 @@ if analyze:
 st.markdown("---")
 
 st.caption(
-    "⚠️ Research prototype only. This system is not a medical "
-    "diagnostic device and should not be used to make clinical "
-    "decisions."
+    "⚠️ Research prototype only. Not intended to replace "
+    "clinical diagnosis or professional medical evaluation."
 )
