@@ -145,35 +145,21 @@ def calculate_multimodal_score(
     """
     Research-prototype multimodal fusion.
 
-    CNN = primary image-based evidence.
-    RI = optical contribution from SPR pathway.
+    CNN provides the primary image-based evidence.
+    RI provides an additional optical contribution.
 
-    The RI contribution is centered around the healthy
-    reference RI.
-
-    RI below healthy reference:
-        decreases the multimodal score.
-
-    RI above healthy reference:
-        increases the multimodal score.
-
-    IMPORTANT:
-    This is a research-prototype score and NOT a clinically
-    validated cancer probability.
+    This is NOT a clinically validated cancer probability.
     """
 
-    # --------------------------------------------------------
-    # RI NORMALIZATION
-    # --------------------------------------------------------
+    # Validated SPR range
+    min_ri = 1.33
+    max_ri = 1.40
 
-    validated_min_ri = 1.33
-    validated_max_ri = 1.40
-
-    # Normalize RI from 0 to 1
+    # Normalize RI
     ri_normalized = (
-        (user_ri - validated_min_ri)
+        (user_ri - min_ri)
         /
-        (validated_max_ri - validated_min_ri)
+        (max_ri - min_ri)
     )
 
     ri_normalized = float(
@@ -184,14 +170,11 @@ def calculate_multimodal_score(
         )
     )
 
-    # --------------------------------------------------------
-    # CENTER RI CONTRIBUTION AROUND HEALTHY RI
-    # --------------------------------------------------------
-
+    # Healthy reference normalized value
     healthy_normalized = (
-        (healthy_ri - validated_min_ri)
+        (healthy_ri - min_ri)
         /
-        (validated_max_ri - validated_min_ri)
+        (max_ri - min_ri)
     )
 
     # Difference from healthy reference
@@ -201,21 +184,13 @@ def calculate_multimodal_score(
         healthy_normalized
     )
 
-    # --------------------------------------------------------
-    # RI EFFECT
+    # RI contribution
     #
-    # Maximum RI effect = ±15 percentage points.
+    # Maximum effect is approximately ±15 percentage points.
     #
-    # This keeps the CNN as the primary contributor while
-    # allowing RI to increase/decrease the final score.
-    # --------------------------------------------------------
-
     ri_effect = 0.30 * ri_difference
 
-    # --------------------------------------------------------
-    # FINAL MULTIMODAL SCORE
-    # --------------------------------------------------------
-
+    # Final multimodal score
     multimodal_score = (
         cnn_malignant_probability
         +
@@ -391,7 +366,7 @@ if analyze:
             )
 
             # ------------------------------------------------
-            # RESIZE TO CNN INPUT SIZE
+            # RESIZE TO MODEL INPUT
             # ------------------------------------------------
 
             img_resized = tf.image.resize(
@@ -411,43 +386,64 @@ if analyze:
             # ------------------------------------------------
             # IMPORTANT
             #
-            # DO NOT USE /255 HERE.
+            # DO NOT DIVIDE BY 255.
             #
-            # The trained model already contains its
+            # The saved CNN already contains its own
             # preprocessing layers.
             # ------------------------------------------------
 
-           prediction = cnn_model.predict(
-            img_input,
-            verbose=0
-           )
+            prediction = cnn_model.predict(
+                img_input,
+                verbose=0
+            )
 
-raw_prediction = float(
-    np.asarray(prediction).reshape(-1)[0]
-)
+            # ------------------------------------------------
+            # RAW CNN OUTPUT
+            # ------------------------------------------------
 
-st.write("DEBUG — Raw CNN output:", raw_prediction)
+            raw_prediction = float(
+                np.asarray(prediction)
+                .reshape(-1)[0]
+            )
 
-prediction = cnn_model.predict(
-    img_input,
-    verbose=0
-)
+            # ------------------------------------------------
+            # TEMPORARY DEBUG DISPLAY
+            #
+            # This lets us verify the class mapping.
+            # ------------------------------------------------
 
-raw_prediction = float(
-    np.asarray(prediction).reshape(-1)[0]
-)
+            st.caption(
+                f"Raw CNN output: {raw_prediction:.6f}"
+            )
 
-st.write("DEBUG — Raw CNN output:", raw_prediction)
+            # ------------------------------------------------
+            # CURRENT INTERPRETATION
+            #
+            # We are temporarily treating output as
+            # malignant probability.
+            #
+            # We will verify this after seeing the raw
+            # output on your known benign mole.
+            # ------------------------------------------------
 
-malignant_probability = raw_prediction
-benign_probability = 1.0 - raw_prediction
+            malignant_probability = (
+                raw_prediction
+            )
+
+            benign_probability = (
+                1.0 -
+                malignant_probability
+            )
+
         except Exception as e:
 
             st.error(
                 "CNN prediction failed."
             )
 
-            st.code(str(e))
+            st.code(
+                str(e)
+            )
 
             st.stop()
 
@@ -488,7 +484,7 @@ benign_probability = 1.0 - raw_prediction
 
 
     # ========================================================
-    # CNN RESULTS
+    # CNN RESULT
     # ========================================================
 
     cnn_col1, cnn_col2, cnn_col3, cnn_col4 = (
@@ -524,28 +520,8 @@ benign_probability = 1.0 - raw_prediction
         )
 
 
-    if cnn_confidence < 0.60:
-
-        st.warning(
-            "The CNN output is close to the decision boundary "
-            "and should be treated as uncertain."
-        )
-
-    elif cnn_confidence < 0.80:
-
-        st.info(
-            "The CNN shows moderate confidence."
-        )
-
-    else:
-
-        st.success(
-            "The CNN shows high model confidence."
-        )
-
-
     st.caption(
-        "CNN model: Fine-tuned EfficientNet-based classifier. "
+        "CNN model: EfficientNet-based classifier. "
         
     )
 
@@ -577,7 +553,9 @@ benign_probability = 1.0 - raw_prediction
                 "SPR prediction failed."
             )
 
-            st.code(str(e))
+            st.code(
+                str(e)
+            )
 
             st.stop()
 
@@ -616,7 +594,9 @@ benign_probability = 1.0 - raw_prediction
             "Unable to generate healthy reference SPR curve."
         )
 
-        st.code(str(e))
+        st.code(
+            str(e)
+        )
 
         st.stop()
 
@@ -666,7 +646,7 @@ benign_probability = 1.0 - raw_prediction
 
 
     # ========================================================
-    # FULL SPR CURVE
+    # SPR CURVE
     # ========================================================
 
     st.subheader(
@@ -802,7 +782,7 @@ benign_probability = 1.0 - raw_prediction
 
 
     # ========================================================
-    # MULTIMODAL CLASSIFICATION
+    # FINAL MULTIMODAL CLASSIFICATION
     # ========================================================
 
     if multimodal_score >= 0.50:
@@ -901,11 +881,11 @@ benign_probability = 1.0 - raw_prediction
 
 
     # ========================================================
-    # RI CONTRIBUTION DETAILS
+    # RI CONTRIBUTION
     # ========================================================
 
-    st.write(
-        "### 🔬 RI Contribution"
+    st.subheader(
+        "🔬 RI Contribution"
     )
 
     contribution_col1, contribution_col2, contribution_col3 = (
@@ -931,130 +911,26 @@ benign_probability = 1.0 - raw_prediction
         if ri_effect > 0:
 
             st.write(
-                f"**RI effect:** "
+                f"**RI Effect:** "
                 f"+{ri_effect * 100:.2f}%"
             )
 
         elif ri_effect < 0:
 
             st.write(
-                f"**RI effect:** "
+                f"**RI Effect:** "
                 f"{ri_effect * 100:.2f}%"
             )
 
         else:
 
             st.write(
-                "**RI effect:** 0.00%"
+                "**RI Effect:** 0.00%"
             )
 
 
     # ========================================================
-    # MULTIMODAL INTERPRETATION
-    # ========================================================
-
-    if ri_effect > 0:
-
-        st.info(
-            f"The entered RI is above the healthy reference "
-            f"and increases the multimodal research score by "
-            f"{ri_effect * 100:.2f} percentage points."
-        )
-
-    elif ri_effect < 0:
-
-        st.info(
-            f"The entered RI is below the healthy reference "
-            f"and decreases the multimodal research score by "
-            f"{abs(ri_effect) * 100:.2f} percentage points."
-        )
-
-    else:
-
-        st.info(
-            "The entered RI matches the healthy reference, "
-            "so it produces no change to the CNN score."
-        )
-
-
-    # ========================================================
-    # COMPLETE ANALYSIS SUMMARY
-    # ========================================================
-
-    st.markdown("---")
-
-    st.markdown(
-        '<div class="section-title">'
-        '📋 Complete Analysis Summary'
-        '</div>',
-        unsafe_allow_html=True
-    )
-
-    summary_col1, summary_col2 = (
-        st.columns(2)
-    )
-
-
-    # --------------------------------------------------------
-    # CNN SUMMARY
-    # --------------------------------------------------------
-
-    with summary_col1:
-
-        st.write("### 🧬 CNN Analysis")
-
-        st.write(
-            f"**Prediction:** "
-            f"{predicted_class}"
-        )
-
-        st.write(
-            f"**Malignant output:** "
-            f"{malignant_probability * 100:.2f}%"
-        )
-
-        st.write(
-            f"**Benign output:** "
-            f"{benign_probability * 100:.2f}%"
-        )
-
-        st.write(
-            f"**Confidence:** "
-            f"{cnn_confidence_level}"
-        )
-
-
-    # --------------------------------------------------------
-    # SPR SUMMARY
-    # --------------------------------------------------------
-
-    with summary_col2:
-
-        st.write("### 🔬 SPR Analysis")
-
-        st.write(
-            f"**User RI:** "
-            f"{spr_result['ri']:.3f}"
-        )
-
-        st.write(
-            f"**Resonance angle:** "
-            f"{spr_result['spr_angle']:.2f}°"
-        )
-
-        st.write(
-            f"**Minimum reflectance:** "
-            f"{spr_result['rmin']:.4f}"
-        )
-
-        st.write(
-            f"**Angular shift:** "
-            f"{angular_shift:.2f}°"
-        )
-
-
-    # ========================================================
-    # FINAL RESULT
+    # FINAL SUMMARY
     # ========================================================
 
     st.markdown("---")
@@ -1063,7 +939,9 @@ benign_probability = 1.0 - raw_prediction
         "🎯 Final Multimodal Assessment"
     )
 
-    final_col1, final_col2 = st.columns(2)
+    final_col1, final_col2 = (
+        st.columns(2)
+    )
 
     with final_col1:
 
@@ -1093,16 +971,16 @@ benign_probability = 1.0 - raw_prediction
     st.write(
         "The CNN provides image-based classification, while "
         "the SPR pathway provides optical information based "
-        "on the measured refractive index. The RI is used as "
-        "an additional optical contribution in the proposed "
-        "multimodal research score."
+        "on the measured refractive index. These two sources "
+        "are combined as complementary information in the "
+        "proposed multimodal research system."
     )
 
     st.warning(
         "The multimodal score is a research-prototype fusion "
         "score and is not a clinically validated cancer "
-        "probability. This system should not be used as a "
-        "medical diagnosis."
+        "probability. The application should not be used "
+        "for medical diagnosis."
     )
 
 
@@ -1115,6 +993,5 @@ st.markdown("---")
 st.caption(
     "⚠️ Research prototype only. This system is not a medical "
     "diagnostic device and should not be used to make clinical "
-    "decisions. Results must be interpreted by qualified "
-    "healthcare professionals."
+    "decisions."
 )
