@@ -2,7 +2,7 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
+from PIL import Image, ImageStat
 
 from spr_model import predict_user_spr, get_healthy_reference
 
@@ -56,7 +56,9 @@ st.markdown(
 # ============================================================
 
 st.markdown(
-    '<div class="main-title">🔬 Skin Cancer Multimodal Analysis</div>',
+    '<div class="main-title">'
+    '🔬 Skin Cancer Multimodal Analysis'
+    '</div>',
     unsafe_allow_html=True
 )
 
@@ -103,11 +105,146 @@ except Exception as e:
 
 
 # ============================================================
+# IMAGE QUALITY CHECK
+# ============================================================
+
+def check_image_quality(image):
+
+    image = image.convert("RGB")
+
+    width, height = image.size
+
+    if width < 100 or height < 100:
+
+        return False, "Image resolution is too low."
+
+    stat = ImageStat.Stat(image)
+
+    brightness = sum(stat.mean) / 3
+
+    if brightness < 15:
+
+        return False, "Image is too dark."
+
+    if brightness > 245:
+
+        return False, "Image is too bright."
+
+    return True, "Image quality check passed."
+
+
+# ============================================================
+# MULTIMODAL FUSION
+# ============================================================
+
+def calculate_multimodal_score(
+    cnn_malignant_probability,
+    user_ri,
+    healthy_ri=1.35
+):
+    """
+    Research-prototype multimodal fusion.
+
+    CNN = primary image-based evidence.
+    RI = optical contribution from SPR pathway.
+
+    The RI contribution is centered around the healthy
+    reference RI.
+
+    RI below healthy reference:
+        decreases the multimodal score.
+
+    RI above healthy reference:
+        increases the multimodal score.
+
+    IMPORTANT:
+    This is a research-prototype score and NOT a clinically
+    validated cancer probability.
+    """
+
+    # --------------------------------------------------------
+    # RI NORMALIZATION
+    # --------------------------------------------------------
+
+    validated_min_ri = 1.33
+    validated_max_ri = 1.40
+
+    # Normalize RI from 0 to 1
+    ri_normalized = (
+        (user_ri - validated_min_ri)
+        /
+        (validated_max_ri - validated_min_ri)
+    )
+
+    ri_normalized = float(
+        np.clip(
+            ri_normalized,
+            0.0,
+            1.0
+        )
+    )
+
+    # --------------------------------------------------------
+    # CENTER RI CONTRIBUTION AROUND HEALTHY RI
+    # --------------------------------------------------------
+
+    healthy_normalized = (
+        (healthy_ri - validated_min_ri)
+        /
+        (validated_max_ri - validated_min_ri)
+    )
+
+    # Difference from healthy reference
+    ri_difference = (
+        ri_normalized
+        -
+        healthy_normalized
+    )
+
+    # --------------------------------------------------------
+    # RI EFFECT
+    #
+    # Maximum RI effect = ±15 percentage points.
+    #
+    # This keeps the CNN as the primary contributor while
+    # allowing RI to increase/decrease the final score.
+    # --------------------------------------------------------
+
+    ri_effect = 0.30 * ri_difference
+
+    # --------------------------------------------------------
+    # FINAL MULTIMODAL SCORE
+    # --------------------------------------------------------
+
+    multimodal_score = (
+        cnn_malignant_probability
+        +
+        ri_effect
+    )
+
+    multimodal_score = float(
+        np.clip(
+            multimodal_score,
+            0.0,
+            1.0
+        )
+    )
+
+    return (
+        multimodal_score,
+        ri_normalized,
+        ri_effect
+    )
+
+
+# ============================================================
 # INPUT SECTION
 # ============================================================
 
 st.markdown(
-    '<div class="section-title">Patient Inputs</div>',
+    '<div class="section-title">'
+    'Patient Inputs'
+    '</div>',
     unsafe_allow_html=True
 )
 
@@ -144,11 +281,29 @@ with col1:
                 use_container_width=True
             )
 
-        except Exception:
+            quality_ok, quality_message = (
+                check_image_quality(image)
+            )
+
+            if quality_ok:
+
+                st.success(
+                    quality_message
+                )
+
+            else:
+
+                st.warning(
+                    quality_message
+                )
+
+        except Exception as e:
 
             st.error(
                 "Unable to read the uploaded image."
             )
+
+            st.code(str(e))
 
 
 # ============================================================
@@ -191,14 +346,14 @@ analyze = st.button(
 
 
 # ============================================================
-# ANALYSIS
+# MAIN ANALYSIS
 # ============================================================
 
 if analyze:
 
-    # --------------------------------------------------------
+    # ========================================================
     # CHECK IMAGE
-    # --------------------------------------------------------
+    # ========================================================
 
     if image is None:
 
@@ -214,40 +369,53 @@ if analyze:
     # ========================================================
 
     st.markdown(
-        '<div class="section-title">🧬 CNN Skin Image Analysis</div>',
+        '<div class="section-title">'
+        '🧬 CNN Skin Image Analysis'
+        '</div>',
         unsafe_allow_html=True
     )
 
-    with st.spinner("Analyzing skin image..."):
+    with st.spinner(
+        "Analyzing skin image..."
+    ):
 
         try:
 
-            # ----------------------------------------------
-            # Resize to model input size
-            # ----------------------------------------------
+            # ------------------------------------------------
+            # CONVERT IMAGE TO NUMPY
+            # ------------------------------------------------
 
             img_array = np.array(
                 image,
                 dtype=np.float32
             )
 
+            # ------------------------------------------------
+            # RESIZE TO CNN INPUT SIZE
+            # ------------------------------------------------
+
             img_resized = tf.image.resize(
                 img_array,
                 (224, 224)
             )
+
+            # ------------------------------------------------
+            # ADD BATCH DIMENSION
+            # ------------------------------------------------
 
             img_input = tf.expand_dims(
                 img_resized,
                 axis=0
             )
 
-            # ----------------------------------------------
-            # IMPORTANT:
-            # Do NOT divide by 255 here.
+            # ------------------------------------------------
+            # IMPORTANT
             #
-            # The trained CNN already contains:
-            # Rescaling + Normalization layers.
-            # ----------------------------------------------
+            # DO NOT USE /255 HERE.
+            #
+            # The trained model already contains its
+            # preprocessing layers.
+            # ------------------------------------------------
 
             prediction = cnn_model.predict(
                 img_input,
@@ -255,11 +423,21 @@ if analyze:
             )
 
             malignant_probability = float(
-                np.asarray(prediction).reshape(-1)[0]
+                np.asarray(prediction)
+                .reshape(-1)[0]
+            )
+
+            malignant_probability = float(
+                np.clip(
+                    malignant_probability,
+                    0.0,
+                    1.0
+                )
             )
 
             benign_probability = (
-                1.0 - malignant_probability
+                1.0 -
+                malignant_probability
             )
 
         except Exception as e:
@@ -287,10 +465,34 @@ if analyze:
 
 
     # ========================================================
-    # CNN RESULT
+    # CNN CONFIDENCE
     # ========================================================
 
-    cnn_col1, cnn_col2, cnn_col3 = st.columns(3)
+    cnn_confidence = max(
+        malignant_probability,
+        benign_probability
+    )
+
+    if cnn_confidence >= 0.80:
+
+        cnn_confidence_level = "High"
+
+    elif cnn_confidence >= 0.60:
+
+        cnn_confidence_level = "Moderate"
+
+    else:
+
+        cnn_confidence_level = "Low"
+
+
+    # ========================================================
+    # CNN RESULTS
+    # ========================================================
+
+    cnn_col1, cnn_col2, cnn_col3, cnn_col4 = (
+        st.columns(4)
+    )
 
     with cnn_col1:
 
@@ -313,10 +515,37 @@ if analyze:
             f"{benign_probability * 100:.2f}%"
         )
 
+    with cnn_col4:
+
+        st.metric(
+            "CNN Confidence",
+            cnn_confidence_level
+        )
+
+
+    if cnn_confidence < 0.60:
+
+        st.warning(
+            "The CNN output is close to the decision boundary "
+            "and should be treated as uncertain."
+        )
+
+    elif cnn_confidence < 0.80:
+
+        st.info(
+            "The CNN shows moderate confidence."
+        )
+
+    else:
+
+        st.success(
+            "The CNN shows high model confidence."
+        )
+
 
     st.caption(
-        "CNN model: EfficientNet-based classifier. "
-        "Test accuracy: 91.75%."
+        "CNN model: Fine-tuned EfficientNet-based classifier. "
+        
     )
 
 
@@ -325,11 +554,15 @@ if analyze:
     # ========================================================
 
     st.markdown(
-        '<div class="section-title">🔬 SPR Analysis</div>',
+        '<div class="section-title">'
+        '🔬 SPR Analysis'
+        '</div>',
         unsafe_allow_html=True
     )
 
-    with st.spinner("Generating full SPR response..."):
+    with st.spinner(
+        "Generating full SPR response..."
+    ):
 
         try:
 
@@ -359,7 +592,7 @@ if analyze:
         )
 
         st.info(
-            "Please enter an RI between 1.33 and 1.40 "
+            "Please enter an RI between 1.33 and 1.42 "
             "for the validated SPR model."
         )
 
@@ -372,7 +605,9 @@ if analyze:
 
     try:
 
-        healthy_result = get_healthy_reference()
+        healthy_result = (
+            get_healthy_reference()
+        )
 
     except Exception as e:
 
@@ -389,7 +624,16 @@ if analyze:
     # SPR METRICS
     # ========================================================
 
-    spr_col1, spr_col2, spr_col3, spr_col4 = st.columns(4)
+    angular_shift = (
+        spr_result["spr_angle"]
+        -
+        healthy_result["spr_angle"]
+    )
+
+
+    spr_col1, spr_col2, spr_col3, spr_col4 = (
+        st.columns(4)
+    )
 
     with spr_col1:
 
@@ -414,12 +658,6 @@ if analyze:
 
     with spr_col4:
 
-        angular_shift = (
-            spr_result["spr_angle"]
-            -
-            healthy_result["spr_angle"]
-        )
-
         st.metric(
             "Angular Shift",
             f"{angular_shift:.2f}°"
@@ -438,10 +676,7 @@ if analyze:
         figsize=(12, 6)
     )
 
-    # --------------------------------------------------------
-    # HEALTHY CURVE
-    # --------------------------------------------------------
-
+    # Healthy curve
     ax.plot(
         healthy_result["angles"],
         healthy_result["curve"],
@@ -452,11 +687,7 @@ if analyze:
         )
     )
 
-
-    # --------------------------------------------------------
-    # USER CURVE
-    # --------------------------------------------------------
-
+    # User curve
     ax.plot(
         spr_result["angles"],
         spr_result["curve"],
@@ -468,11 +699,7 @@ if analyze:
         )
     )
 
-
-    # --------------------------------------------------------
-    # HEALTHY RESONANCE
-    # --------------------------------------------------------
-
+    # Healthy resonance
     ax.axvline(
         healthy_result["spr_angle"],
         linestyle=":",
@@ -483,11 +710,7 @@ if analyze:
         )
     )
 
-
-    # --------------------------------------------------------
-    # USER RESONANCE
-    # --------------------------------------------------------
-
+    # User resonance
     ax.axvline(
         spr_result["spr_angle"],
         linestyle=":",
@@ -497,11 +720,6 @@ if analyze:
             f"{spr_result['spr_angle']:.2f}°"
         )
     )
-
-
-    # --------------------------------------------------------
-    # AXIS LABELS
-    # --------------------------------------------------------
 
     ax.set_xlabel(
         "Incident Angle (degrees)",
@@ -568,44 +786,254 @@ if analyze:
 
 
     # ========================================================
-    # COMBINED SUMMARY
+    # MULTIMODAL FUSION
+    # ========================================================
+
+    (
+        multimodal_score,
+        ri_normalized,
+        ri_effect
+    ) = calculate_multimodal_score(
+        malignant_probability,
+        spr_result["ri"],
+        healthy_result["ri"]
+    )
+
+
+    # ========================================================
+    # MULTIMODAL CLASSIFICATION
+    # ========================================================
+
+    if multimodal_score >= 0.50:
+
+        multimodal_class = "Malignant"
+
+    else:
+
+        multimodal_class = "Benign"
+
+
+    # ========================================================
+    # MULTIMODAL CONFIDENCE
+    # ========================================================
+
+    multimodal_confidence = max(
+        multimodal_score,
+        1.0 - multimodal_score
+    )
+
+    if multimodal_confidence >= 0.80:
+
+        multimodal_confidence_level = "High"
+
+    elif multimodal_confidence >= 0.60:
+
+        multimodal_confidence_level = "Moderate"
+
+    else:
+
+        multimodal_confidence_level = "Low"
+
+
+    # ========================================================
+    # MULTIMODAL RESULT
     # ========================================================
 
     st.markdown("---")
 
     st.markdown(
-        '<div class="section-title">📋 Analysis Summary</div>',
+        '<div class="section-title">'
+        '🧬🔬 Multimodal Fusion Result'
+        '</div>',
         unsafe_allow_html=True
     )
 
-    summary_col1, summary_col2 = st.columns(2)
+    st.write(
+        "The final research score combines the CNN image "
+        "output with the RI-based SPR contribution."
+    )
 
+
+    mm_col1, mm_col2, mm_col3, mm_col4 = (
+        st.columns(4)
+    )
+
+    with mm_col1:
+
+        st.metric(
+            "Final Assessment",
+            multimodal_class
+        )
+
+    with mm_col2:
+
+        st.metric(
+            "Multimodal Risk Score",
+            f"{multimodal_score * 100:.2f}%"
+        )
+
+    with mm_col3:
+
+        st.metric(
+            "CNN Malignant Output",
+            f"{malignant_probability * 100:.2f}%"
+        )
+
+    with mm_col4:
+
+        if ri_effect >= 0:
+
+            effect_text = (
+                f"+{ri_effect * 100:.2f}%"
+            )
+
+        else:
+
+            effect_text = (
+                f"{ri_effect * 100:.2f}%"
+            )
+
+        st.metric(
+            "RI Effect",
+            effect_text
+        )
+
+
+    # ========================================================
+    # RI CONTRIBUTION DETAILS
+    # ========================================================
+
+    st.write(
+        "### 🔬 RI Contribution"
+    )
+
+    contribution_col1, contribution_col2, contribution_col3 = (
+        st.columns(3)
+    )
+
+    with contribution_col1:
+
+        st.write(
+            f"**Healthy Reference RI:** "
+            f"{healthy_result['ri']:.3f}"
+        )
+
+    with contribution_col2:
+
+        st.write(
+            f"**User RI:** "
+            f"{spr_result['ri']:.3f}"
+        )
+
+    with contribution_col3:
+
+        if ri_effect > 0:
+
+            st.write(
+                f"**RI effect:** "
+                f"+{ri_effect * 100:.2f}%"
+            )
+
+        elif ri_effect < 0:
+
+            st.write(
+                f"**RI effect:** "
+                f"{ri_effect * 100:.2f}%"
+            )
+
+        else:
+
+            st.write(
+                "**RI effect:** 0.00%"
+            )
+
+
+    # ========================================================
+    # MULTIMODAL INTERPRETATION
+    # ========================================================
+
+    if ri_effect > 0:
+
+        st.info(
+            f"The entered RI is above the healthy reference "
+            f"and increases the multimodal research score by "
+            f"{ri_effect * 100:.2f} percentage points."
+        )
+
+    elif ri_effect < 0:
+
+        st.info(
+            f"The entered RI is below the healthy reference "
+            f"and decreases the multimodal research score by "
+            f"{abs(ri_effect) * 100:.2f} percentage points."
+        )
+
+    else:
+
+        st.info(
+            "The entered RI matches the healthy reference, "
+            "so it produces no change to the CNN score."
+        )
+
+
+    # ========================================================
+    # COMPLETE ANALYSIS SUMMARY
+    # ========================================================
+
+    st.markdown("---")
+
+    st.markdown(
+        '<div class="section-title">'
+        '📋 Complete Analysis Summary'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    summary_col1, summary_col2 = (
+        st.columns(2)
+    )
+
+
+    # --------------------------------------------------------
+    # CNN SUMMARY
+    # --------------------------------------------------------
 
     with summary_col1:
 
-        st.write("### CNN")
+        st.write("### 🧬 CNN Analysis")
 
         st.write(
-            f"**Prediction:** {predicted_class}"
+            f"**Prediction:** "
+            f"{predicted_class}"
         )
 
         st.write(
-            f"**Malignant probability:** "
+            f"**Malignant output:** "
             f"{malignant_probability * 100:.2f}%"
         )
 
         st.write(
-            f"**Benign probability:** "
+            f"**Benign output:** "
             f"{benign_probability * 100:.2f}%"
         )
 
+        st.write(
+            f"**Confidence:** "
+            f"{cnn_confidence_level}"
+        )
+
+
+    # --------------------------------------------------------
+    # SPR SUMMARY
+    # --------------------------------------------------------
 
     with summary_col2:
 
-        st.write("### SPR")
+        st.write("### 🔬 SPR Analysis")
 
         st.write(
-            f"**User RI:** {spr_result['ri']:.3f}"
+            f"**User RI:** "
+            f"{spr_result['ri']:.3f}"
         )
 
         st.write(
@@ -625,6 +1053,33 @@ if analyze:
 
 
     # ========================================================
+    # FINAL RESULT
+    # ========================================================
+
+    st.markdown("---")
+
+    st.subheader(
+        "🎯 Final Multimodal Assessment"
+    )
+
+    final_col1, final_col2 = st.columns(2)
+
+    with final_col1:
+
+        st.metric(
+            "Final Result",
+            multimodal_class
+        )
+
+    with final_col2:
+
+        st.metric(
+            "Multimodal Risk Score",
+            f"{multimodal_score * 100:.2f}%"
+        )
+
+
+    # ========================================================
     # RESEARCH INTERPRETATION
     # ========================================================
 
@@ -635,16 +1090,23 @@ if analyze:
     )
 
     st.write(
-        "The CNN provides an image-based classification result, "
-        "while the SPR component provides an optical response "
-        "based on the entered refractive index. These two "
-        "measurements are presented together as complementary "
-        "information in the proposed multimodal system."
+        "The CNN provides image-based classification, while "
+        "the SPR pathway provides optical information based "
+        "on the measured refractive index. The RI is used as "
+        "an additional optical contribution in the proposed "
+        "multimodal research score."
+    )
+
+    st.warning(
+        "The multimodal score is a research-prototype fusion "
+        "score and is not a clinically validated cancer "
+        "probability. This system should not be used as a "
+        "medical diagnosis."
     )
 
 
 # ============================================================
-# FOOTER / DISCLAIMER
+# FOOTER
 # ============================================================
 
 st.markdown("---")
@@ -655,28 +1117,3 @@ st.caption(
     "decisions. Results must be interpreted by qualified "
     "healthcare professionals."
 )
-st.markdown("---")
-st.subheader("🧪 Multimodal Fusion Test")
-
-test_ri = st.selectbox(
-    "Test RI",
-    [1.33, 1.35, 1.38, 1.40]
-)
-
-test_cnn = st.number_input(
-    "Test CNN malignant probability",
-    min_value=0.0,
-    max_value=1.0,
-    value=0.80,
-    step=0.01
-)
-
-test_score, test_ri_score = calculate_multimodal_score(
-    test_cnn,
-    test_ri,
-    1.35
-)
-
-st.write("CNN probability:", f"{test_cnn * 100:.2f}%")
-st.write("RI optical score:", f"{test_ri_score * 100:.2f}%")
-st.write("Multimodal score:", f"{test_score * 100:.2f}%")
