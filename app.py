@@ -27,31 +27,14 @@ st.markdown(
     """
     <style>
 
-    /* Streamlit theme-aware colors. These variables follow the
-       active light/dark theme selected in Streamlit. */
-
     @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 
-    :root {
-        --app-ink: var(--st-text-color, #16263b);
-        --app-slate: var(--st-gray-text-color, var(--st-text-color, #53637a));
-        --app-paper: var(--st-background-color, #f4f6f9);
-        --app-surface: var(--st-secondary-background-color, #ffffff);
-        --app-primary: var(--st-primary-color, #16324a);
-        --app-border: var(--st-border-color, rgba(128,128,128,.28));
-    }
-
+    /* IMPORTANT: do not paint the app background here.
+       Streamlit owns the light/dark theme and its native colors. */
     html, body, [class*="css"] {
         font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
         -webkit-font-smoothing:antialiased;
         -moz-osx-font-smoothing:grayscale;
-    }
-
-    .stApp,
-    [data-testid="stAppViewContainer"],
-    [data-testid="stMain"],
-    [data-testid="stMainBlockContainer"] {
-        background-color:var(--app-paper) !important;
     }
 
     .block-container {
@@ -65,7 +48,6 @@ st.markdown(
         font-family:'Fraunces',serif;
         font-size:58px;
         font-weight:600;
-        color:var(--app-ink) !important;
         margin-bottom:10px;
         letter-spacing:-.5px;
         line-height:1.15;
@@ -75,7 +57,6 @@ st.markdown(
         text-align:center;
         font-size:22px;
         font-weight:500;
-        color:var(--app-slate) !important;
         margin-bottom:22px;
         line-height:1.6;
     }
@@ -85,42 +66,37 @@ st.markdown(
         height:4px;
         margin:0 auto 32px auto;
         border-radius:10px;
-        background:var(--app-primary);
+        background:currentColor;
     }
 
     .stApp p {
         font-size:19px !important;
         line-height:1.7 !important;
-        color:var(--app-ink) !important;
     }
 
     .stApp label {
         font-size:19px !important;
         font-weight:500 !important;
-        color:var(--app-ink) !important;
     }
 
     .stApp .stCaption,
     [data-testid="stCaptionContainer"] {
         font-size:17px !important;
         line-height:1.6 !important;
-        color:var(--app-slate) !important;
     }
 
     .section-title {
         font-family:'Fraunces',serif;
         font-size:33px;
         font-weight:600;
-        color:var(--app-ink) !important;
         margin-top:38px;
         margin-bottom:18px;
         padding-left:16px;
-        border-left:4px solid var(--app-primary);
+        border-left:4px solid currentColor;
         line-height:1.3;
     }
 
     .section-description {
-        color:var(--app-slate) !important;
         font-size:19px;
         line-height:1.7;
         margin-top:-6px;
@@ -128,95 +104,79 @@ st.markdown(
     }
 
     .info-card {
-        background:var(--app-surface) !important;
-        border:1px solid var(--app-border);
-        border-top:3px solid var(--app-primary);
+        background:transparent;
+        border:1px solid currentColor;
+        border-top:3px solid currentColor;
         border-radius:12px;
         padding:25px 28px;
         margin-bottom:22px;
-        box-shadow:0 2px 10px rgba(0,0,0,.08);
     }
 
     .card-title {
         font-family:'Fraunces',serif;
         font-size:23px;
         font-weight:600;
-        color:var(--app-ink) !important;
         margin-bottom:10px;
         line-height:1.4;
     }
 
     .card-text {
         font-size:19px;
-        color:var(--app-slate) !important;
         line-height:1.7;
     }
 
-    .card-text strong { color:var(--app-ink) !important; }
-
     div[data-testid="stMetric"] {
-        background:var(--app-surface) !important;
-        border:1px solid var(--app-border);
-        border-left:3px solid var(--app-primary);
+        background:transparent;
+        border:1px solid currentColor;
+        border-left:3px solid currentColor;
         border-radius:10px;
         padding:20px 22px;
         min-height:122px;
-        box-shadow:0 2px 8px rgba(0,0,0,.08);
     }
 
     div[data-testid="stMetricLabel"],
     div[data-testid="stMetricLabel"] * {
-        color:var(--app-slate) !important;
         font-size:18px !important;
         font-weight:500 !important;
     }
 
     div[data-testid="stMetricValue"],
     div[data-testid="stMetricValue"] * {
-        color:var(--app-ink) !important;
         font-size:33px !important;
         font-weight:700 !important;
     }
 
     div[data-testid="stFileUploader"] {
-        background:var(--app-surface) !important;
-        border:1px solid var(--app-border);
+        border:1px solid currentColor;
         border-radius:12px;
     }
 
     div[data-testid="stFileUploader"] section {
-        background:var(--app-surface) !important;
+        border-radius:12px;
     }
 
     div[data-testid="stFileUploader"] p,
     div[data-testid="stFileUploader"] span,
     div[data-testid="stFileUploader"] small {
         font-size:18px !important;
-        color:var(--app-slate) !important;
     }
 
     div[data-baseweb="input"] {
         border-radius:9px;
-        background-color:var(--app-surface) !important;
-        border:1px solid var(--app-border) !important;
     }
 
     input {
         font-size:19px !important;
-        color:var(--app-ink) !important;
-        background-color:var(--app-surface) !important;
     }
 
     div[role="radiogroup"] {
-        background:var(--app-surface) !important;
-        border:1px solid var(--app-border);
+        border:1px solid currentColor;
         padding:15px 19px;
         border-radius:10px;
     }
 
     div[role="radiogroup"] label {
         font-size:19px !important;
-        color:var(--app-ink) !important;
     }
 
     div.stButton > button {
@@ -228,20 +188,9 @@ st.markdown(
         letter-spacing:.2px;
     }
 
-    div.stButton > button[kind="primary"],
-    button[data-testid="baseButton-primary"] {
-        background-color:var(--app-primary) !important;
-        border:none !important;
-        color:#ffffff !important;
+    div[data-testid="stAlert"] {
+        border-radius:10px;
     }
-
-    div.stButton > button[kind="primary"] *,
-    button[data-testid="baseButton-primary"] * {
-        color:#ffffff !important;
-        opacity:1 !important;
-    }
-
-    div[data-testid="stAlert"] { border-radius:10px; }
 
     div[data-testid="stAlert"] p {
         font-size:18px !important;
@@ -252,16 +201,12 @@ st.markdown(
 
     .footer {
         text-align:center;
-        color:var(--app-slate) !important;
         font-size:16px;
         line-height:1.7;
         padding-top:16px;
-        border-top:1px solid var(--app-border);
+        border-top:1px solid currentColor;
         margin-top:6px;
     }
-
-    /* The current Streamlit theme variables automatically change
-       when the viewer switches between Light and Dark mode. */
 
     </style>
     """,
