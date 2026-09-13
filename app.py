@@ -65,8 +65,24 @@ st.markdown(
         -moz-osx-font-smoothing: grayscale;
     }
 
-    .stApp {
-        background-color: var(--paper);
+    /*
+       This design is only tuned for a light palette. Rather than
+       trying to also match Streamlit's separate dark theme (which
+       swaps text/background pairings underneath these custom
+       colors and breaks contrast), pin the whole app to the light
+       theme regardless of the visitor's OS/browser preference or
+       Streamlit's own theme setting.
+    */
+    html {
+        color-scheme: light only;
+    }
+
+    .stApp,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    [data-testid="stHeader"],
+    .main {
+        background-color: var(--paper) !important;
     }
 
     .block-container {
@@ -186,7 +202,7 @@ st.markdown(
        ======================================================== */
 
     .info-card {
-        background: var(--surface);
+        background: var(--surface) !important;
         border: 1px solid var(--border);
         border-top: 3px solid var(--bronze-soft);
         border-radius: 12px;
@@ -199,15 +215,19 @@ st.markdown(
         font-family: 'Fraunces', serif;
         font-size: 23px;
         font-weight: 600;
-        color: var(--ink);
+        color: var(--ink) !important;
         margin-bottom: 10px;
         line-height: 1.4;
     }
 
     .card-text {
         font-size: 19px;
-        color: var(--slate);
+        color: var(--slate) !important;
         line-height: 1.7;
+    }
+
+    .card-text strong {
+        color: var(--ink) !important;
     }
 
 
@@ -216,7 +236,7 @@ st.markdown(
        ======================================================== */
 
     div[data-testid="stMetric"] {
-        background: var(--surface);
+        background: var(--surface) !important;
         border: 1px solid var(--border);
         border-left: 3px solid var(--navy);
         border-radius: 10px;
@@ -225,14 +245,16 @@ st.markdown(
         box-shadow: 0 2px 8px rgba(22, 38, 59, 0.05);
     }
 
-    div[data-testid="stMetricLabel"] {
-        color: var(--slate);
+    div[data-testid="stMetricLabel"],
+    div[data-testid="stMetricLabel"] * {
+        color: var(--slate) !important;
         font-size: 18px !important;
         font-weight: 500 !important;
     }
 
-    div[data-testid="stMetricValue"] {
-        color: var(--ink);
+    div[data-testid="stMetricValue"],
+    div[data-testid="stMetricValue"] * {
+        color: var(--ink) !important;
         font-size: 33px !important;
         font-weight: 700;
     }
@@ -243,13 +265,20 @@ st.markdown(
        ======================================================== */
 
     div[data-testid="stFileUploader"] {
-        background: var(--surface);
+        background: var(--surface) !important;
         border: 1px solid var(--border);
         border-radius: 12px;
     }
 
-    div[data-testid="stFileUploader"] p {
+    div[data-testid="stFileUploader"] section {
+        background: var(--surface) !important;
+    }
+
+    div[data-testid="stFileUploader"] p,
+    div[data-testid="stFileUploader"] span,
+    div[data-testid="stFileUploader"] small {
         font-size: 18px !important;
+        color: var(--slate) !important;
     }
 
 
@@ -259,10 +288,14 @@ st.markdown(
 
     div[data-baseweb="input"] {
         border-radius: 9px;
+        background-color: var(--surface) !important;
+        border: 1px solid var(--border) !important;
     }
 
     input {
         font-size: 19px !important;
+        color: var(--ink) !important;
+        background-color: var(--surface) !important;
     }
 
 
@@ -271,7 +304,7 @@ st.markdown(
        ======================================================== */
 
     div[role="radiogroup"] {
-        background: var(--surface);
+        background: var(--surface) !important;
         border: 1px solid var(--border);
         padding: 15px 19px;
         border-radius: 10px;
@@ -279,6 +312,7 @@ st.markdown(
 
     div[role="radiogroup"] label {
         font-size: 19px !important;
+        color: #273142 !important;
     }
 
 
@@ -296,18 +330,29 @@ st.markdown(
         transition: background-color 0.15s ease, transform 0.05s ease;
     }
 
-    div.stButton > button[kind="primary"] {
-        background-color: var(--navy);
-        border: none;
-        color: #ffffff;
+    div.stButton > button[kind="primary"],
+    button[data-testid="baseButton-primary"] {
+        background-color: var(--navy) !important;
+        border: none !important;
+        color: #ffffff !important;
     }
 
-    div.stButton > button[kind="primary"]:hover {
-        background-color: var(--navy-deep);
-        color: #ffffff;
+    /* Streamlit wraps the button label in its own inner element;
+       force every descendant (label text, icon) to stay white so
+       it can never inherit a theme-dependent, low-contrast color. */
+    div.stButton > button[kind="primary"] *,
+    button[data-testid="baseButton-primary"] * {
+        color: #ffffff !important;
+        opacity: 1 !important;
     }
 
-    div.stButton > button[kind="primary"]:active {
+    div.stButton > button[kind="primary"]:hover,
+    button[data-testid="baseButton-primary"]:hover {
+        background-color: var(--navy-deep) !important;
+    }
+
+    div.stButton > button[kind="primary"]:active,
+    button[data-testid="baseButton-primary"]:active {
         transform: scale(0.99);
     }
 
@@ -383,21 +428,13 @@ st.markdown(
 )
 
 st.markdown(
-    """
-    <div class="info-card">
-
-        <div class="card-title">
-            Research Prototype
-        </div>
-
-        <div class="card-text">
-            An interactive framework combining skin-image analysis,
-            lesion characteristics, and refractive-index-based
-            Surface Plasmon Resonance analysis.
-        </div>
-
-    </div>
-    """,
+    '<div class="info-card">'
+    '<div class="card-title">Research Prototype</div>'
+    '<div class="card-text">An interactive framework combining '
+    'skin-image analysis, lesion characteristics, and '
+    'refractive-index-based Surface Plasmon Resonance analysis.'
+    '</div>'
+    '</div>',
     unsafe_allow_html=True
 )
 
@@ -596,16 +633,9 @@ col1, col2 = st.columns(
 with col1:
 
     st.markdown(
-        """
-        <div class="card-title">
-            🖼️ Skin Lesion Image
-        </div>
-
-        <div class="card-text">
-            Upload a clear image of the skin lesion for
-            CNN-based analysis.
-        </div>
-        """,
+        '<div class="card-title">🖼️ Skin Lesion Image</div>'
+        '<div class="card-text">Upload a clear image of the skin '
+        'lesion for CNN-based analysis.</div>',
         unsafe_allow_html=True
     )
 
@@ -671,16 +701,9 @@ with col1:
 with col2:
 
     st.markdown(
-        """
-        <div class="card-title">
-            🔬 Refractive Index
-        </div>
-
-        <div class="card-text">
-            Enter the refractive index used as the sensing
-            condition for the SPR analysis.
-        </div>
-        """,
+        '<div class="card-title">🔬 Refractive Index</div>'
+        '<div class="card-text">Enter the refractive index used as '
+        'the sensing condition for the SPR analysis.</div>',
         unsafe_allow_html=True
     )
 
@@ -1453,22 +1476,12 @@ if analyze:
     with contribution_col1:
 
         st.markdown(
-            f"""
-            <div class="info-card">
-
-                <div class="card-title">
-                    CNN
-                </div>
-
-                <div class="card-text">
-                    Contribution:
-                    <strong>
-                    {0.60 * malignant_probability * 100:.2f}%
-                    </strong>
-                </div>
-
-            </div>
-            """,
+            '<div class="info-card">'
+            '<div class="card-title">CNN</div>'
+            '<div class="card-text">Contribution: '
+            f'<strong>{0.60 * malignant_probability * 100:.2f}%</strong>'
+            '</div>'
+            '</div>',
             unsafe_allow_html=True
         )
 
@@ -1476,22 +1489,12 @@ if analyze:
     with contribution_col2:
 
         st.markdown(
-            f"""
-            <div class="info-card">
-
-                <div class="card-title">
-                    Questionnaire
-                </div>
-
-                <div class="card-text">
-                    Contribution:
-                    <strong>
-                    {0.20 * questionnaire_score * 100:.2f}%
-                    </strong>
-                </div>
-
-            </div>
-            """,
+            '<div class="info-card">'
+            '<div class="card-title">Questionnaire</div>'
+            '<div class="card-text">Contribution: '
+            f'<strong>{0.20 * questionnaire_score * 100:.2f}%</strong>'
+            '</div>'
+            '</div>',
             unsafe_allow_html=True
         )
 
@@ -1512,22 +1515,12 @@ if analyze:
 
 
         st.markdown(
-            f"""
-            <div class="info-card">
-
-                <div class="card-title">
-                    SPR / RI
-                </div>
-
-                <div class="card-text">
-                    Effect:
-                    <strong>
-                    {spr_effect_text}
-                    </strong>
-                </div>
-
-            </div>
-            """,
+            '<div class="info-card">'
+            '<div class="card-title">SPR / RI</div>'
+            '<div class="card-text">Effect: '
+            f'<strong>{spr_effect_text}</strong>'
+            '</div>'
+            '</div>',
             unsafe_allow_html=True
         )
 
@@ -1581,21 +1574,13 @@ if analyze:
 
 
     st.markdown(
-        """
-        <div class="info-card">
-
-            <div class="card-text">
-
-                The proposed system combines image-based CNN
-                features, user-reported lesion characteristics,
-                and optical SPR information. These modalities
-                provide complementary evidence for the proposed
-                multimodal assessment.
-
-            </div>
-
-        </div>
-        """,
+        '<div class="info-card">'
+        '<div class="card-text">The proposed system combines '
+        'image-based CNN features, user-reported lesion '
+        'characteristics, and optical SPR information. These '
+        'modalities provide complementary evidence for the '
+        'proposed multimodal assessment.</div>'
+        '</div>',
         unsafe_allow_html=True
     )
 
@@ -1613,13 +1598,11 @@ if analyze:
 # ============================================================
 
 st.markdown(
-    """
-    <div class="footer">
-        Research prototype • Multimodal skin cancer analysis
-        <br>
-        Not intended to replace clinical diagnosis or
-        professional medical evaluation.
-    </div>
-    """,
+    '<div class="footer">'
+    'Research prototype • Multimodal skin cancer analysis'
+    '<br>'
+    'Not intended to replace clinical diagnosis or '
+    'professional medical evaluation.'
+    '</div>',
     unsafe_allow_html=True
 )
