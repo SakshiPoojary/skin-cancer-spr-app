@@ -28,17 +28,58 @@ st.markdown(
     <style>
 
     /* ========================================================
+       FONTS
+
+       Fraunces (a warm, editorial serif) carries the headline,
+       Inter (a clean, highly legible grotesk) carries every
+       other piece of text. The pairing is meant to read as a
+       serious scientific instrument rather than a generic app.
+       ======================================================== */
+
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+        --ink: #16263b;         /* primary text / headings   */
+        --slate: #53637a;       /* secondary / muted text    */
+        --paper: #f4f6f9;       /* page background           */
+        --surface: #ffffff;     /* card background           */
+        --border: #dfe4eb;      /* hairline borders          */
+        --navy: #16324a;        /* primary accent            */
+        --navy-deep: #0f2436;   /* pressed / hover navy      */
+        --bronze: #9c7a3c;      /* secondary accent          */
+        --bronze-soft: #c9ac74; /* lighter bronze for tints  */
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; }
+    }
+
+
+    /* ========================================================
        GLOBAL
        ======================================================== */
 
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
     .stApp {
-        background-color: #f7f9fc;
+        background-color: var(--paper);
     }
 
     .block-container {
-        padding-top: 2.2rem;
-        padding-bottom: 2.5rem;
+        padding-top: 2.4rem;
+        padding-bottom: 3rem;
         max-width: 1450px;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    div[role="radiogroup"] label:focus-within {
+        outline: 2px solid var(--bronze);
+        outline-offset: 2px;
     }
 
 
@@ -48,29 +89,31 @@ st.markdown(
 
     .main-title {
         text-align: center;
-        font-size: 50px;
-        font-weight: 750;
-        color: #172033;
-        margin-bottom: 8px;
-        letter-spacing: -1px;
-        line-height: 1.2;
+        font-family: 'Fraunces', serif;
+        font-size: 58px;
+        font-weight: 600;
+        font-optical-sizing: auto;
+        color: var(--ink);
+        margin-bottom: 10px;
+        letter-spacing: -0.5px;
+        line-height: 1.15;
     }
 
     .subtitle {
         text-align: center;
         font-size: 22px;
         font-weight: 500;
-        color: #596579;
-        margin-bottom: 25px;
-        line-height: 1.5;
+        color: var(--slate);
+        margin-bottom: 22px;
+        line-height: 1.6;
     }
 
     .header-line {
-        width: 80px;
-        height: 5px;
-        margin: 0 auto 30px auto;
+        width: 96px;
+        height: 4px;
+        margin: 0 auto 32px auto;
         border-radius: 10px;
-        background: #3b82f6;
+        background: linear-gradient(90deg, var(--navy), var(--bronze));
     }
 
 
@@ -79,7 +122,7 @@ st.markdown(
        ======================================================== */
 
     .stApp p {
-        font-size: 18px !important;
+        font-size: 19px !important;
         line-height: 1.7 !important;
         color: #374151;
     }
@@ -90,7 +133,7 @@ st.markdown(
        ======================================================== */
 
     .stApp label {
-        font-size: 18px !important;
+        font-size: 19px !important;
         font-weight: 500 !important;
         color: #273142 !important;
     }
@@ -102,9 +145,9 @@ st.markdown(
 
     .stApp .stCaption,
     [data-testid="stCaptionContainer"] {
-        font-size: 16px !important;
+        font-size: 17px !important;
         line-height: 1.6 !important;
-        color: #596579 !important;
+        color: var(--slate) !important;
     }
 
 
@@ -113,49 +156,57 @@ st.markdown(
        ======================================================== */
 
     .section-title {
-        font-size: 31px;
-        font-weight: 700;
-        color: #172033;
-        margin-top: 34px;
-        margin-bottom: 17px;
-        padding-left: 15px;
-        border-left: 5px solid #3b82f6;
+        font-family: 'Fraunces', serif;
+        font-size: 33px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-top: 38px;
+        margin-bottom: 18px;
+        padding-left: 16px;
+        border-left: 4px solid var(--navy);
         line-height: 1.3;
     }
 
     .section-description {
-        color: #596579;
-        font-size: 18px;
+        color: var(--slate);
+        font-size: 19px;
         line-height: 1.7;
-        margin-top: -5px;
-        margin-bottom: 22px;
+        margin-top: -6px;
+        margin-bottom: 24px;
     }
 
 
     /* ========================================================
        INFORMATION CARDS
+
+       A thin bronze rule along the top distinguishes these
+       from the metric cards below (which carry a navy rule on
+       the left) - two related but distinct structural cues
+       rather than one repeated card style.
        ======================================================== */
 
     .info-card {
-        background: #ffffff;
-        border: 1px solid #e1e6ee;
-        border-radius: 15px;
-        padding: 24px 27px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-top: 3px solid var(--bronze-soft);
+        border-radius: 12px;
+        padding: 25px 28px;
         margin-bottom: 22px;
-        box-shadow: 0 2px 9px rgba(15, 23, 42, 0.05);
+        box-shadow: 0 2px 10px rgba(22, 38, 59, 0.05);
     }
 
     .card-title {
-        font-size: 22px;
-        font-weight: 700;
-        color: #1f2937;
-        margin-bottom: 9px;
+        font-family: 'Fraunces', serif;
+        font-size: 23px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 10px;
         line-height: 1.4;
     }
 
     .card-text {
-        font-size: 18px;
-        color: #596579;
+        font-size: 19px;
+        color: var(--slate);
         line-height: 1.7;
     }
 
@@ -165,22 +216,24 @@ st.markdown(
        ======================================================== */
 
     div[data-testid="stMetric"] {
-        background: #ffffff;
-        border: 1px solid #e1e6ee;
-        border-radius: 13px;
-        padding: 19px 21px;
-        min-height: 120px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--navy);
+        border-radius: 10px;
+        padding: 20px 22px;
+        min-height: 122px;
+        box-shadow: 0 2px 8px rgba(22, 38, 59, 0.05);
     }
 
     div[data-testid="stMetricLabel"] {
-        color: #596579;
-        font-size: 17px !important;
+        color: var(--slate);
+        font-size: 18px !important;
+        font-weight: 500 !important;
     }
 
     div[data-testid="stMetricValue"] {
-        color: #172033;
-        font-size: 29px !important;
+        color: var(--ink);
+        font-size: 33px !important;
         font-weight: 700;
     }
 
@@ -190,12 +243,13 @@ st.markdown(
        ======================================================== */
 
     div[data-testid="stFileUploader"] {
-        background: #ffffff;
-        border-radius: 13px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
     }
 
     div[data-testid="stFileUploader"] p {
-        font-size: 17px !important;
+        font-size: 18px !important;
     }
 
 
@@ -204,11 +258,11 @@ st.markdown(
        ======================================================== */
 
     div[data-baseweb="input"] {
-        border-radius: 10px;
+        border-radius: 9px;
     }
 
     input {
-        font-size: 18px !important;
+        font-size: 19px !important;
     }
 
 
@@ -217,14 +271,14 @@ st.markdown(
        ======================================================== */
 
     div[role="radiogroup"] {
-        background: #ffffff;
-        border: 1px solid #e1e6ee;
-        padding: 14px 18px;
-        border-radius: 11px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 15px 19px;
+        border-radius: 10px;
     }
 
     div[role="radiogroup"] label {
-        font-size: 18px !important;
+        font-size: 19px !important;
     }
 
 
@@ -235,9 +289,26 @@ st.markdown(
     div.stButton > button {
         width: 100%;
         height: 58px;
-        border-radius: 11px;
-        font-size: 19px !important;
+        border-radius: 9px;
+        font-size: 20px !important;
         font-weight: 700;
+        letter-spacing: 0.2px;
+        transition: background-color 0.15s ease, transform 0.05s ease;
+    }
+
+    div.stButton > button[kind="primary"] {
+        background-color: var(--navy);
+        border: none;
+        color: #ffffff;
+    }
+
+    div.stButton > button[kind="primary"]:hover {
+        background-color: var(--navy-deep);
+        color: #ffffff;
+    }
+
+    div.stButton > button[kind="primary"]:active {
+        transform: scale(0.99);
     }
 
 
@@ -246,21 +317,25 @@ st.markdown(
        ======================================================== */
 
     div[data-testid="stAlert"] {
-        border-radius: 11px;
+        border-radius: 10px;
     }
 
     div[data-testid="stAlert"] p {
-        font-size: 17px !important;
+        font-size: 18px !important;
         line-height: 1.6 !important;
     }
 
 
     /* ========================================================
        IMAGE
+
+       Kept modest by default - the uploaded lesion photo is
+       shown at a fixed, deliberately small width (see the
+       st.image call) rather than stretched across the column.
        ======================================================== */
 
     img {
-        border-radius: 13px;
+        border-radius: 10px;
     }
 
 
@@ -271,9 +346,11 @@ st.markdown(
     .footer {
         text-align: center;
         color: #7b8494;
-        font-size: 15px;
+        font-size: 16px;
         line-height: 1.7;
-        padding-top: 14px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        margin-top: 6px;
     }
 
     </style>
@@ -552,10 +629,14 @@ with col1:
                 uploaded_image
             ).convert("RGB")
 
+            # Displayed at a fixed, modest width rather than
+            # stretched across the column, so the thumbnail
+            # stays proportionate regardless of the source
+            # image's resolution.
             st.image(
                 image,
                 caption="Uploaded Skin Image",
-                use_container_width=True
+                width=280
             )
 
             quality_ok, quality_message = (
@@ -1530,8 +1611,6 @@ if analyze:
 # ============================================================
 # FOOTER
 # ============================================================
-
-st.markdown("---")
 
 st.markdown(
     """
