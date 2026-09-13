@@ -12,37 +12,195 @@ from spr_model import predict_user_spr, get_healthy_reference
 # ============================================================
 
 st.set_page_config(
-    page_title="Skin Cancer Multimodal Analysis",
+    page_title="Multimodal Skin Lesion Analysis",
     page_icon="🔬",
     layout="wide"
 )
 
 
 # ============================================================
-# CUSTOM CSS
+# CUSTOM CSS — INTERFACE ONLY
 # ============================================================
 
 st.markdown(
     """
     <style>
 
+    /* ---------- GLOBAL ---------- */
+
+    .stApp {
+        background-color: #f7f9fc;
+    }
+
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1450px;
+    }
+
+    /* ---------- HEADER ---------- */
+
     .main-title {
         text-align: center;
         font-size: 42px;
-        font-weight: 700;
-        margin-bottom: 5px;
+        font-weight: 750;
+        color: #172033;
+        margin-bottom: 4px;
+        letter-spacing: -0.8px;
     }
 
     .subtitle {
         text-align: center;
-        font-size: 19px;
-        margin-bottom: 25px;
+        font-size: 17px;
+        color: #657084;
+        margin-bottom: 24px;
     }
 
+    .header-line {
+        width: 70px;
+        height: 4px;
+        margin: 0 auto 28px auto;
+        border-radius: 10px;
+        background: #3b82f6;
+    }
+
+    /* ---------- SECTION HEADERS ---------- */
+
     .section-title {
-        font-size: 26px;
-        font-weight: 600;
-        margin-top: 20px;
+        font-size: 25px;
+        font-weight: 700;
+        color: #172033;
+        margin-top: 26px;
+        margin-bottom: 14px;
+        padding-left: 12px;
+        border-left: 4px solid #3b82f6;
+    }
+
+    .section-description {
+        color: #657084;
+        font-size: 14px;
+        margin-top: -5px;
+        margin-bottom: 18px;
+    }
+
+    /* ---------- CARDS ---------- */
+
+    .info-card {
+        background: #ffffff;
+        border: 1px solid #e3e8ef;
+        border-radius: 14px;
+        padding: 20px 22px;
+        margin-bottom: 18px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .card-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 5px;
+    }
+
+    .card-text {
+        font-size: 13px;
+        color: #6b7280;
+        line-height: 1.55;
+    }
+
+    /* ---------- METRICS ---------- */
+
+    div[data-testid="stMetric"] {
+        background: #ffffff;
+        border: 1px solid #e3e8ef;
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 7px rgba(15, 23, 42, 0.04);
+    }
+
+    div[data-testid="stMetricLabel"] {
+        color: #667085;
+        font-size: 13px;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: #172033;
+        font-weight: 700;
+    }
+
+    /* ---------- INPUTS ---------- */
+
+    div[data-testid="stFileUploader"] {
+        background: #ffffff;
+        border-radius: 12px;
+    }
+
+    div[data-baseweb="input"] {
+        border-radius: 9px;
+    }
+
+    /* ---------- BUTTON ---------- */
+
+    div.stButton > button {
+        width: 100%;
+        height: 50px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        border: none;
+    }
+
+    /* ---------- RADIO ---------- */
+
+    div[role="radiogroup"] {
+        background: #ffffff;
+        border: 1px solid #e3e8ef;
+        padding: 10px 14px;
+        border-radius: 10px;
+    }
+
+    /* ---------- ALERTS ---------- */
+
+    div[data-testid="stAlert"] {
+        border-radius: 10px;
+    }
+
+    /* ---------- IMAGE ---------- */
+
+    img {
+        border-radius: 12px;
+    }
+
+    /* ---------- FOOTER ---------- */
+
+    .footer {
+        text-align: center;
+        color: #8a94a6;
+        font-size: 12px;
+        padding-top: 10px;
+    }
+
+    /* ---------- RESULT BANNER ---------- */
+
+    .result-banner {
+        background: #ffffff;
+        border: 1px solid #dfe5ec;
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin: 15px 0 20px 0;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+
+    .result-label {
+        font-size: 13px;
+        color: #667085;
+        margin-bottom: 5px;
+    }
+
+    .result-value {
+        font-size: 30px;
+        font-weight: 750;
+        color: #172033;
     }
 
     </style>
@@ -52,26 +210,39 @@ st.markdown(
 
 
 # ============================================================
-# TITLE
+# HEADER
 # ============================================================
 
 st.markdown(
-    '<div class="main-title">'
-    '🔬 Skin Cancer Multimodal Analysis'
-    '</div>',
+    '<div class="main-title">🔬 Multimodal Skin Lesion Analysis</div>',
     unsafe_allow_html=True
 )
 
 st.markdown(
     '<div class="subtitle">'
-    'CNN + Clinical Features + Surface Plasmon Resonance'
+    'CNN-based Image Analysis&nbsp;&nbsp;•&nbsp;&nbsp;'
+    'Lesion Characteristics&nbsp;&nbsp;•&nbsp;&nbsp;'
+    'Surface Plasmon Resonance'
     '</div>',
     unsafe_allow_html=True
 )
 
-st.info(
-    "Research prototype combining image-based CNN analysis, "
-    "lesion characteristics, and RI-based SPR analysis."
+st.markdown(
+    '<div class="header-line"></div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="info-card">
+        <div class="card-title">Research Prototype</div>
+        <div class="card-text">
+            An interactive framework combining skin-lesion image analysis,
+            lesion characteristics, and refractive-index-based SPR analysis.
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 
@@ -142,16 +313,6 @@ def calculate_questionnaire_score(
     irregular_border,
     multiple_colors
 ):
-    """
-    Research-prototype lesion feature score.
-
-    Each positive feature contributes equally.
-
-    0 positive answers = 0.00
-    1 positive answer  = 0.33
-    2 positive answers = 0.67
-    3 positive answers = 1.00
-    """
 
     score = (
         int(change_recently)
@@ -174,28 +335,9 @@ def calculate_multimodal_score(
     user_ri,
     healthy_ri=1.35
 ):
-    """
-    Research-prototype multimodal fusion.
-
-    CNN contribution       = 60%
-    Questionnaire          = 20%
-    SPR/RI contribution    = 20%
-
-    IMPORTANT:
-    This is a research-prototype score and NOT a clinically
-    validated cancer probability.
-    """
-
-    # --------------------------------------------------------
-    # VALIDATED RI RANGE
-    # --------------------------------------------------------
 
     min_ri = 1.33
     max_ri = 1.40
-
-    # --------------------------------------------------------
-    # NORMALIZE RI
-    # --------------------------------------------------------
 
     ri_normalized = (
         (user_ri - min_ri)
@@ -211,19 +353,11 @@ def calculate_multimodal_score(
         )
     )
 
-    # --------------------------------------------------------
-    # HEALTHY REFERENCE
-    # --------------------------------------------------------
-
     healthy_normalized = (
         (healthy_ri - min_ri)
         /
         (max_ri - min_ri)
     )
-
-    # --------------------------------------------------------
-    # RI DIFFERENCE
-    # --------------------------------------------------------
 
     ri_difference = (
         ri_normalized
@@ -231,25 +365,7 @@ def calculate_multimodal_score(
         healthy_normalized
     )
 
-    # --------------------------------------------------------
-    # RI EFFECT
-    #
-    # Maximum effect is approximately ±10 percentage points.
-    # --------------------------------------------------------
-
     ri_effect = 0.20 * ri_difference
-
-    # --------------------------------------------------------
-    # QUESTIONNAIRE EFFECT
-    #
-    # Questionnaire score is 0 to 1.
-    #
-    # Center it around 0.5 so that:
-    #
-    # 0 positive features → decreases score
-    # 1-2 features        → moderate effect
-    # 3 features          → increases score
-    # --------------------------------------------------------
 
     questionnaire_effect = (
         0.20 *
@@ -260,18 +376,10 @@ def calculate_multimodal_score(
         )
     )
 
-    # --------------------------------------------------------
-    # CNN PRIMARY CONTRIBUTION
-    # --------------------------------------------------------
-
     cnn_contribution = (
         0.60 *
         cnn_malignant_probability
     )
-
-    # --------------------------------------------------------
-    # FINAL SCORE
-    # --------------------------------------------------------
 
     multimodal_score = (
         cnn_contribution
@@ -281,7 +389,6 @@ def calculate_multimodal_score(
         ri_effect
     )
 
-    # Keep score between 0 and 1
     multimodal_score = float(
         np.clip(
             multimodal_score,
@@ -303,8 +410,14 @@ def calculate_multimodal_score(
 # ============================================================
 
 st.markdown(
-    '<div class="section-title">'
-    'Patient Inputs'
+    '<div class="section-title">Patient Inputs</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="section-description">'
+    'Provide the skin-lesion image and refractive-index value required '
+    'for the analysis.'
     '</div>',
     unsafe_allow_html=True
 )
@@ -314,7 +427,7 @@ st.markdown(
 # IMAGE + RI
 # ============================================================
 
-col1, col2 = st.columns(2)
+col1, col2 = st.columns(2, gap="large")
 
 
 # ============================================================
@@ -323,10 +436,18 @@ col1, col2 = st.columns(2)
 
 with col1:
 
-    st.subheader("🖼️ Skin Image")
+    st.markdown(
+        """
+        <div class="card-title">🖼️ Skin Lesion Image</div>
+        <div class="card-text">
+            Upload a clear image of the skin lesion for CNN-based analysis.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     uploaded_image = st.file_uploader(
-        "Upload a skin lesion image",
+        "Upload skin lesion image",
         type=[
             "jpg",
             "jpeg",
@@ -382,10 +503,19 @@ with col1:
 
 with col2:
 
-    st.subheader("🔬 Refractive Index")
+    st.markdown(
+        """
+        <div class="card-title">🔬 Refractive Index</div>
+        <div class="card-text">
+            Enter the refractive index used as the sensing condition
+            for the SPR analysis.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
     user_ri = st.number_input(
-        "Enter measured refractive index (RI)",
+        "Measured refractive index (RI)",
         min_value=1.30,
         max_value=1.45,
         value=1.375,
@@ -393,7 +523,7 @@ with col2:
         format="%.3f"
     )
 
-    st.caption(
+    st.info(
         "Validated SPR range: RI = 1.33–1.40"
     )
 
@@ -406,18 +536,17 @@ with col2:
 # LESION QUESTIONS
 # ============================================================
 
-st.markdown("---")
-
 st.markdown(
-    '<div class="section-title">'
-    '🩺 Lesion Characteristics'
-    '</div>',
+    '<div class="section-title">🩺 Lesion Characteristics</div>',
     unsafe_allow_html=True
 )
 
-st.write(
-    "Answer the following questions based on the appearance "
-    "or recent history of the lesion."
+st.markdown(
+    '<div class="section-description">'
+    'Answer the following questions based on the appearance or '
+    'recent history of the lesion.'
+    '</div>',
+    unsafe_allow_html=True
 )
 
 
@@ -452,6 +581,7 @@ q3 = st.radio(
 
 
 # Convert answers to Boolean values
+
 change_recently = (
     q1 == "Yes"
 )
@@ -472,7 +602,7 @@ multiple_colors = (
 st.markdown("")
 
 analyze = st.button(
-    "🔍 ANALYZE",
+    "🔍  RUN MULTIMODAL ANALYSIS",
     type="primary",
     use_container_width=True
 )
@@ -502,9 +632,7 @@ if analyze:
     # ========================================================
 
     st.markdown(
-        '<div class="section-title">'
-        '🧬 CNN Skin Image Analysis'
-        '</div>',
+        '<div class="section-title">🧬 CNN Skin Image Analysis</div>',
         unsafe_allow_html=True
     )
 
@@ -515,34 +643,34 @@ if analyze:
         try:
 
             # Convert image to NumPy
+
             img_array = np.array(
                 image,
                 dtype=np.float32
             )
 
             # Resize
+
             img_resized = tf.image.resize(
                 img_array,
                 (224, 224)
             )
 
             # Add batch dimension
+
             img_input = tf.expand_dims(
                 img_resized,
                 axis=0
             )
 
-            # IMPORTANT:
             # Do NOT divide by 255.
-            # The trained model already contains
-            # preprocessing layers.
+            # The trained model already contains preprocessing layers.
 
             prediction = cnn_model.predict(
                 img_input,
                 verbose=0
             )
 
-            # Raw model output
             raw_prediction = float(
                 np.asarray(prediction)
                 .reshape(-1)[0]
@@ -556,7 +684,7 @@ if analyze:
                 )
             )
 
-            # Class mapping confirmed during training:
+            # Class mapping:
             # Benign = 0
             # Malignant = 1
 
@@ -622,7 +750,7 @@ if analyze:
     # ========================================================
 
     cnn_col1, cnn_col2, cnn_col3, cnn_col4 = (
-        st.columns(4)
+        st.columns(4, gap="medium")
     )
 
     with cnn_col1:
@@ -654,12 +782,6 @@ if analyze:
         )
 
 
-    st.caption(
-        "EfficientNet-based CNN | "
-        "Test accuracy: 91.75%"
-    )
-
-
     # ========================================================
     # LESION QUESTIONNAIRE RESULT
     # ========================================================
@@ -673,17 +795,14 @@ if analyze:
     )
 
 
-    st.markdown("---")
-
-    st.subheader(
-        "🩺 Lesion Feature Analysis"
+    st.markdown(
+        '<div class="section-title">🩺 Lesion Feature Analysis</div>',
+        unsafe_allow_html=True
     )
-
 
     feature_col1, feature_col2, feature_col3, feature_col4 = (
-        st.columns(4)
+        st.columns(4, gap="medium")
     )
-
 
     with feature_col1:
 
@@ -692,7 +811,6 @@ if analyze:
             "Yes" if change_recently else "No"
         )
 
-
     with feature_col2:
 
         st.metric(
@@ -700,14 +818,12 @@ if analyze:
             "Yes" if irregular_border else "No"
         )
 
-
     with feature_col3:
 
         st.metric(
             "Multiple Colors",
             "Yes" if multiple_colors else "No"
         )
-
 
     with feature_col4:
 
@@ -722,9 +838,7 @@ if analyze:
     # ========================================================
 
     st.markdown(
-        '<div class="section-title">'
-        '🔬 SPR Analysis'
-        '</div>',
+        '<div class="section-title">🔬 SPR Analysis</div>',
         unsafe_allow_html=True
     )
 
@@ -804,9 +918,8 @@ if analyze:
 
 
     spr_col1, spr_col2, spr_col3, spr_col4 = (
-        st.columns(4)
+        st.columns(4, gap="medium")
     )
-
 
     with spr_col1:
 
@@ -815,7 +928,6 @@ if analyze:
             f"{spr_result['ri']:.3f}"
         )
 
-
     with spr_col2:
 
         st.metric(
@@ -823,14 +935,12 @@ if analyze:
             f"{spr_result['spr_angle']:.2f}°"
         )
 
-
     with spr_col3:
 
         st.metric(
             "User Rmin",
             f"{spr_result['rmin']:.4f}"
         )
-
 
     with spr_col4:
 
@@ -844,8 +954,13 @@ if analyze:
     # SPR CURVE
     # ========================================================
 
-    st.subheader(
-        "Healthy Skin vs User Skin SPR Response"
+    st.markdown(
+        '<div class="section-title">📈 SPR Response Comparison</div>',
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        "Healthy reference versus user-defined SPR response."
     )
 
 
@@ -855,6 +970,7 @@ if analyze:
 
 
     # Healthy curve
+
     ax.plot(
         healthy_result["angles"],
         healthy_result["curve"],
@@ -867,6 +983,7 @@ if analyze:
 
 
     # User curve
+
     ax.plot(
         spr_result["angles"],
         spr_result["curve"],
@@ -880,6 +997,7 @@ if analyze:
 
 
     # Healthy resonance
+
     ax.axvline(
         healthy_result["spr_angle"],
         linestyle=":",
@@ -892,6 +1010,7 @@ if analyze:
 
 
     # User resonance
+
     ax.axvline(
         spr_result["spr_angle"],
         linestyle=":",
@@ -915,7 +1034,8 @@ if analyze:
 
     ax.set_title(
         "Full SPR Response Curve",
-        fontsize=15
+        fontsize=15,
+        fontweight="600"
     )
 
     ax.grid(
@@ -939,8 +1059,9 @@ if analyze:
     # SPR INTERPRETATION
     # ========================================================
 
-    st.subheader(
-        "SPR Result"
+    st.markdown(
+        '<div class="section-title">SPR Result</div>',
+        unsafe_allow_html=True
     )
 
 
@@ -1026,8 +1147,6 @@ if analyze:
     # MULTIMODAL RESULT
     # ========================================================
 
-    st.markdown("---")
-
     st.markdown(
         '<div class="section-title">'
         '🧬 + 🩺 + 🔬 Multimodal Fusion Result'
@@ -1035,16 +1154,17 @@ if analyze:
         unsafe_allow_html=True
     )
 
-
-    st.write(
-        "The final research score combines three information "
-        "sources: CNN image evidence, lesion characteristics, "
-        "and RI-based SPR information."
+    st.markdown(
+        '<div class="section-description">'
+        'Combined analysis using CNN image evidence, lesion '
+        'characteristics, and RI-based SPR information.'
+        '</div>',
+        unsafe_allow_html=True
     )
 
 
     mm_col1, mm_col2, mm_col3, mm_col4 = (
-        st.columns(4)
+        st.columns(4, gap="medium")
     )
 
 
@@ -1096,29 +1216,50 @@ if analyze:
     # CONTRIBUTION BREAKDOWN
     # ========================================================
 
-    st.subheader(
-        "📊 Multimodal Contribution"
+    st.markdown(
+        '<div class="section-title">📊 Multimodal Contribution</div>',
+        unsafe_allow_html=True
     )
 
 
     contribution_col1, contribution_col2, contribution_col3 = (
-        st.columns(3)
+        st.columns(3, gap="medium")
     )
 
 
     with contribution_col1:
 
-        st.write(
-            f"**CNN contribution:** "
-            f"{0.60 * malignant_probability * 100:.2f}%"
+        st.markdown(
+            f"""
+            <div class="info-card">
+                <div class="card-title">CNN</div>
+                <div class="card-text">
+                    Contribution:
+                    <strong>
+                    {0.60 * malignant_probability * 100:.2f}%
+                    </strong>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
 
     with contribution_col2:
 
-        st.write(
-            f"**Questionnaire contribution:** "
-            f"{0.20 * questionnaire_score * 100:.2f}%"
+        st.markdown(
+            f"""
+            <div class="info-card">
+                <div class="card-title">Questionnaire</div>
+                <div class="card-text">
+                    Contribution:
+                    <strong>
+                    {0.20 * questionnaire_score * 100:.2f}%
+                    </strong>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
 
@@ -1126,32 +1267,44 @@ if analyze:
 
         if ri_effect >= 0:
 
-            st.write(
-                f"**SPR/RI effect:** "
+            spr_effect_text = (
                 f"+{ri_effect * 100:.2f}%"
             )
 
         else:
 
-            st.write(
-                f"**SPR/RI effect:** "
+            spr_effect_text = (
                 f"{ri_effect * 100:.2f}%"
             )
+
+        st.markdown(
+            f"""
+            <div class="info-card">
+                <div class="card-title">SPR / RI</div>
+                <div class="card-text">
+                    Effect:
+                    <strong>
+                    {spr_effect_text}
+                    </strong>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 
     # ========================================================
     # FINAL SUMMARY
     # ========================================================
 
-    st.markdown("---")
-
-    st.subheader(
-        "🎯 Final Multimodal Assessment"
+    st.markdown(
+        '<div class="section-title">🎯 Final Multimodal Assessment</div>',
+        unsafe_allow_html=True
     )
 
 
     final_col1, final_col2 = (
-        st.columns(2)
+        st.columns(2, gap="medium")
     )
 
 
@@ -1175,19 +1328,24 @@ if analyze:
     # RESEARCH INTERPRETATION
     # ========================================================
 
-    st.markdown("---")
-
-    st.subheader(
-        "Research Interpretation"
+    st.markdown(
+        '<div class="section-title">Research Interpretation</div>',
+        unsafe_allow_html=True
     )
 
 
-    st.write(
-        "The proposed system combines image-based CNN "
-        "features, user-reported lesion characteristics, "
-        "and optical SPR information. These modalities "
-        "provide complementary evidence for the proposed "
-        "multimodal assessment."
+    st.markdown(
+        """
+        <div class="info-card">
+            <div class="card-text">
+                The proposed system combines image-based CNN features,
+                user-reported lesion characteristics, and optical SPR
+                information. These modalities provide complementary
+                evidence for the proposed multimodal assessment.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
 
 
@@ -1205,7 +1363,14 @@ if analyze:
 
 st.markdown("---")
 
-st.caption(
-    "⚠️ Research prototype only. Not intended to replace "
-    "clinical diagnosis or professional medical evaluation."
+st.markdown(
+    """
+    <div class="footer">
+        Research prototype • Multimodal skin-lesion analysis
+        <br>
+        Not intended to replace clinical diagnosis or professional
+        medical evaluation.
+    </div>
+    """,
+    unsafe_allow_html=True
 )
