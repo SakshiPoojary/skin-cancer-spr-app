@@ -237,16 +237,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.markdown(
-    '<div class="info-card">'
-    '<div class="card-title">Research Prototype</div>'
-    '<div class="card-text">An interactive framework combining '
-    'skin-image analysis, lesion characteristics, and '
-    'refractive-index-based Surface Plasmon Resonance analysis.'
-    '</div>'
-    '</div>',
-    unsafe_allow_html=True
-)
 
 
 # ============================================================
