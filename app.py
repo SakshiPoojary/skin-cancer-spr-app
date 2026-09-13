@@ -27,19 +27,18 @@ st.markdown(
     """
     <style>
 
-    /* Streamlit's own theme variables are used throughout.
-       Therefore the interface follows the selected Streamlit
-       light/dark theme automatically. */
+    /* Streamlit theme-aware colors. These variables follow the
+       active light/dark theme selected in Streamlit. */
 
     @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 
     :root {
-        --app-ink: var(--text-color, #16263b);
-        --app-slate: var(--text-color, #53637a);
-        --app-paper: var(--background-color, #f4f6f9);
-        --app-surface: var(--secondary-background-color, #ffffff);
-        --app-primary: var(--primary-color, #16324a);
-        --app-border: rgba(128, 128, 128, 0.28);
+        --app-ink: var(--st-text-color, #16263b);
+        --app-slate: var(--st-gray-text-color, var(--st-text-color, #53637a));
+        --app-paper: var(--st-background-color, #f4f6f9);
+        --app-surface: var(--st-secondary-background-color, #ffffff);
+        --app-primary: var(--st-primary-color, #16324a);
+        --app-border: var(--st-border-color, rgba(128,128,128,.28));
     }
 
     html, body, [class*="css"] {
@@ -50,7 +49,8 @@ st.markdown(
 
     .stApp,
     [data-testid="stAppViewContainer"],
-    [data-testid="stMain"] {
+    [data-testid="stMain"],
+    [data-testid="stMainBlockContainer"] {
         background-color:var(--app-paper) !important;
     }
 
@@ -60,12 +60,6 @@ st.markdown(
         max-width:1450px;
     }
 
-    button:focus-visible, input:focus-visible,
-    div[role="radiogroup"] label:focus-within {
-        outline:2px solid var(--app-primary);
-        outline-offset:2px;
-    }
-
     .main-title {
         text-align:center;
         font-family:'Fraunces',serif;
@@ -73,7 +67,7 @@ st.markdown(
         font-weight:600;
         color:var(--app-ink) !important;
         margin-bottom:10px;
-        letter-spacing:-0.5px;
+        letter-spacing:-.5px;
         line-height:1.15;
     }
 
@@ -158,9 +152,7 @@ st.markdown(
         line-height:1.7;
     }
 
-    .card-text strong {
-        color:var(--app-ink) !important;
-    }
+    .card-text strong { color:var(--app-ink) !important; }
 
     div[data-testid="stMetric"] {
         background:var(--app-surface) !important;
@@ -249,14 +241,7 @@ st.markdown(
         opacity:1 !important;
     }
 
-    div.stButton > button[kind="primary"]:hover,
-    button[data-testid="baseButton-primary"]:hover {
-        filter:brightness(.9);
-    }
-
-    div[data-testid="stAlert"] {
-        border-radius:10px;
-    }
+    div[data-testid="stAlert"] { border-radius:10px; }
 
     div[data-testid="stAlert"] p {
         font-size:18px !important;
@@ -274,6 +259,9 @@ st.markdown(
         border-top:1px solid var(--app-border);
         margin-top:6px;
     }
+
+    /* The current Streamlit theme variables automatically change
+       when the viewer switches between Light and Dark mode. */
 
     </style>
     """,
